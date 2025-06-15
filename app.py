@@ -15,5 +15,15 @@ if st.button("Fetch Top Posts"):
     for post in results:
         st.subheader(f"🔹 {post['topic']}")
         st.markdown(f"[{post['title']}]({post['link']})")
+        
+        # Display engagement metrics
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("👍 Likes", f"{post['engagement']['likes']:,}")
+        with col2:
+            st.metric("💬 Comments", f"{post['engagement']['comments']:,}")
+        with col3:
+            st.metric("🔄 Shares", f"{post['engagement']['shares']:,}")
+        
         st.caption(post['snippet'])
         st.divider()

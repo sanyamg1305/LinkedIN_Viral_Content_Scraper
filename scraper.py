@@ -1,15 +1,46 @@
 import requests
 from datetime import datetime, timedelta
+from linkedin_api import Linkedin
+import re
 
 SERPAPI_API_KEY = "3b30912828c65641526f3dce1f3e0865fde81c7d59950524ac565bf2ab5ddbdd"
+# LinkedIn credentials
+LINKEDIN_EMAIL = "golechhasanyam2005@gmail.com"  # Replace with your dummy account email
+LINKEDIN_PASSWORD = "Barcelona@1305"  # Replace with your dummy account password
+
+def extract_post_id(linkedin_url):
+    # Extract the post ID from LinkedIn URL
+    pattern = r"posts/([^/]+)"
+    match = re.search(pattern, linkedin_url)
+    if match:
+        return match.group(1)
+    return None
+
+def get_post_engagement(api, post_id):
+    try:
+        post_data = api.get_post(post_id)
+        if post_data:
+            return {
+                "likes": post_data.get("numLikes", 0),
+                "comments": post_data.get("numComments", 0),
+                "shares": post_data.get("numShares", 0)
+            }
+    except Exception as e:
+        print(f"Error fetching engagement for post {post_id}: {str(e)}")
+    return {"likes": 0, "comments": 0, "shares": 0}
 
 def fetch_linkedin_posts(topics):
     results = []
-    # Get posts from the last 30 days for better engagement
     date_range = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+    
+    # Initialize LinkedIn API
+    try:
+        api = Linkedin(LINKEDIN_EMAIL, LINKEDIN_PASSWORD)
+    except Exception as e:
+        print(f"Error initializing LinkedIn API: {str(e)}")
+        return []
 
     for topic in topics:
-        # Enhanced search query to find more engaging content
         search_queries = [
             f"site:linkedin.com/posts {topic} engagement",
             f"site:linkedin.com/posts {topic} viral",
@@ -23,54 +54,29 @@ def fetch_linkedin_posts(topics):
                 "hl": "en",
                 "gl": "us",
                 "api_key": SERPAPI_API_KEY,
-                "num": 15,  # Increased to 15 results
-                "as_qdr": "m1"  # Last month
+                "num": 15,
+                "as_qdr": "m1"
             }
 
             try:
                 response = requests.get("https://serpapi.com/search", params=params)
                 data = response.json()
-
                 top_results = data.get("organic_results", [])[:15]
 
                 for result in top_results:
-                    # Extract engagement metrics from the snippet if available
-                    snippet = result.get("snippet", "")
-                    engagement_metrics = {
-                        "likes": 0,
-                        "comments": 0,
-                        "shares": 0
-                    }
-
-                    # Try to parse engagement numbers from the snippet
-                    if "likes" in snippet.lower():
-                        try:
-                            likes_text = snippet.lower().split("likes")[0].split()[-1]
-                            engagement_metrics["likes"] = int(likes_text.replace(",", ""))
-                        except:
-                            pass
-
-                    if "comments" in snippet.lower():
-                        try:
-                            comments_text = snippet.lower().split("comments")[0].split()[-1]
-                            engagement_metrics["comments"] = int(comments_text.replace(",", ""))
-                        except:
-                            pass
-
-                    if "shares" in snippet.lower():
-                        try:
-                            shares_text = snippet.lower().split("shares")[0].split()[-1]
-                            engagement_metrics["shares"] = int(shares_text.replace(",", ""))
-                        except:
-                            pass
+                    post_id = extract_post_id(result.get("link", ""))
+                    if post_id:
+                        engagement = get_post_engagement(api, post_id)
+                    else:
+                        engagement = {"likes": 0, "comments": 0, "shares": 0}
 
                     results.append({
                         "topic": topic,
                         "title": result.get("title", "No title"),
                         "link": result.get("link", "No link"),
-                        "snippet": snippet,
-                        "engagement": engagement_metrics,
-                        "total_engagement": sum(engagement_metrics.values())
+                        "snippet": result.get("snippet", "No snippet"),
+                        "engagement": engagement,
+                        "total_engagement": sum(engagement.values())
                     })
 
             except Exception as e:
@@ -88,4 +94,4 @@ def fetch_linkedin_posts(topics):
             seen_links.add(result["link"])
             unique_results.append(result)
 
-    return unique_results[:15]  # Return top 15 most engaging unique posts
+    return unique_results[:15]

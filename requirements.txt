@@ -1,0 +1,6 @@
+streamlit
+playwright
+requests
+beautifulsoup4
+linkedin-api
+python-dotenv

@@ -5,8 +5,8 @@ import re
 
 SERPAPI_API_KEY = "3b30912828c65641526f3dce1f3e0865fde81c7d59950524ac565bf2ab5ddbdd"
 # LinkedIn credentials
-LINKEDIN_EMAIL = "golechhasanyam2005@gmail.com"  # Replace with your dummy account email
-LINKEDIN_PASSWORD = "Barcelona@1305"  # Replace with your dummy account password
+LINKEDIN_EMAIL = "golechhasanyam5@gmail.com"  # Replace with your dummy account email
+LINKEDIN_PASSWORD = "eadgbe@1305S"  # Replace with your dummy account password
 
 def extract_post_id(linkedin_url):
     # Extract the post ID from LinkedIn URL

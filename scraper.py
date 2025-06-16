@@ -14,33 +14,41 @@ def extract_post_id(linkedin_url):
     match = re.search(pattern, linkedin_url)
     if match:
         return match.group(1)
+    print(f"Could not extract post ID from URL: {linkedin_url}")
     return None
 
 def get_post_engagement(api, post_id):
     try:
+        print(f"Attempting to fetch engagement for post ID: {post_id}")
         post_data = api.get_post(post_id)
         if post_data:
-            return {
+            engagement = {
                 "likes": post_data.get("numLikes", 0),
                 "comments": post_data.get("numComments", 0),
                 "shares": post_data.get("numShares", 0)
             }
+            print(f"Successfully fetched engagement: {engagement}")
+            return engagement
     except Exception as e:
         print(f"Error fetching engagement for post {post_id}: {str(e)}")
     return {"likes": 0, "comments": 0, "shares": 0}
 
 def fetch_linkedin_posts(topics):
+    print(f"Starting to fetch LinkedIn posts for topics: {topics}")
     results = []
     date_range = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
     
     # Initialize LinkedIn API
     try:
+        print("Attempting to initialize LinkedIn API...")
         api = Linkedin(LINKEDIN_EMAIL, LINKEDIN_PASSWORD)
+        print("Successfully initialized LinkedIn API")
     except Exception as e:
         print(f"Error initializing LinkedIn API: {str(e)}")
         return []
 
     for topic in topics:
+        print(f"\nProcessing topic: {topic}")
         search_queries = [
             f"site:linkedin.com/posts {topic} engagement",
             f"site:linkedin.com/posts {topic} viral",
@@ -48,6 +56,7 @@ def fetch_linkedin_posts(topics):
         ]
 
         for query in search_queries:
+            print(f"\nExecuting search query: {query}")
             params = {
                 "engine": "google",
                 "q": query,
@@ -59,9 +68,17 @@ def fetch_linkedin_posts(topics):
             }
 
             try:
+                print("Making request to SerpAPI...")
                 response = requests.get("https://serpapi.com/search", params=params)
                 data = response.json()
+                print(f"Received response from SerpAPI. Status code: {response.status_code}")
+                
+                if "error" in data:
+                    print(f"SerpAPI returned an error: {data['error']}")
+                    continue
+                    
                 top_results = data.get("organic_results", [])[:15]
+                print(f"Found {len(top_results)} results for query")
 
                 for result in top_results:
                     post_id = extract_post_id(result.get("link", ""))
@@ -94,4 +111,5 @@ def fetch_linkedin_posts(topics):
             seen_links.add(result["link"])
             unique_results.append(result)
 
+    print(f"\nFinal results count: {len(unique_results)}")
     return unique_results[:15]

@@ -1,29 +1,33 @@
 import streamlit as st
 from scraper import fetch_linkedin_posts
 
-st.set_page_config(page_title="LinkedIn Post Finder", layout="centered")
+st.set_page_config(page_title="LinkedIn Viral Content Scraper", layout="wide")
+st.title("LinkedIn Viral Content Scraper")
 
-st.title("🔎 LinkedIn Viral Post Scraper")
-topics_input = st.text_area("Enter topics (comma-separated)", "B2B Lead generation, Cold outreach, LinkedIn newsletters")
+# Input for topics
+topics_input = st.text_area(
+    "Enter topics (one per line):",
+    "B2B Lead generation\nCold outreach\nLinkedIn newsletters",
+    height=100
+)
 
-if st.button("Fetch Top Posts"):
-    topics = [t.strip() for t in topics_input.split(",") if t.strip()]
-    with st.spinner("Scraping..."):
-        results = fetch_linkedin_posts(topics)
-
-    st.success("Done! ✅")
-    for post in results:
-        st.subheader(f"🔹 {post['topic']}")
-        st.markdown(f"[{post['title']}]({post['link']})")
+if st.button("Fetch Posts"):
+    topics = [topic.strip() for topic in topics_input.split('\n') if topic.strip()]
+    
+    with st.spinner("Fetching posts..."):
+        posts = fetch_linkedin_posts(topics)
         
-        # Display engagement metrics
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("👍 Likes", f"{post['engagement']['likes']:,}")
-        with col2:
-            st.metric("💬 Comments", f"{post['engagement']['comments']:,}")
-        with col3:
-            st.metric("🔄 Shares", f"{post['engagement']['shares']:,}")
-        
-        st.caption(post['snippet'])
-        st.divider()
+        if posts:
+            st.success(f"Found {len(posts)} unique posts!")
+            
+            for post in posts:
+                with st.container():
+                    st.markdown("---")
+                    st.markdown(f"### {post['title']}")
+                    st.markdown(f"**Topic:** {post['topic']}")
+                    st.markdown(f"**Link:** {post['link']}")
+                    st.markdown(f"**Snippet:** {post['snippet']}")
+                    if post['post_id']:
+                        st.markdown(f"**Post ID:** {post['post_id']}")
+        else:
+            st.error("No posts found. Please try different topics.")
